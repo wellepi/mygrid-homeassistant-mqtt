@@ -1,0 +1,39 @@
+# Pause discharge while the EV charges (idle at 0 W).
+# Requires Home Assistant control on the Control tab (Enable Home Assistant is diagnostics only). Replace entity ids.
+
+- alias: ModuleTwo pause discharge while EV charges
+  description: Hold ModuleTwo at idle while the EV charger is active
+  trigger:
+    - platform: state
+      entity_id: binary_sensor.ev_charger
+      to: "on"
+    - platform: numeric_state
+      entity_id: sensor.ev_charger_power
+      above: 500
+  condition: []
+  action:
+    - service: number.set_value
+      target:
+        entity_id: number.moduletwo_power_setpoint
+      data:
+        value: 0
+  mode: single
+
+- alias: ModuleTwo resume discharge after EV
+  trigger:
+    - platform: state
+      entity_id: binary_sensor.ev_charger
+      to: "off"
+      for:
+        minutes: 2
+  condition:
+    - condition: numeric_state
+      entity_id: sensor.moduletwo_state_of_charge
+      above: 30
+  action:
+    - service: number.set_value
+      target:
+        entity_id: number.moduletwo_power_setpoint
+      data:
+        value: -800
+  mode: single

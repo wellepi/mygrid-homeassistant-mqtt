@@ -1,0 +1,35 @@
+# Force-charge before a known expensive window.
+# Requires Home Assistant control on the Control tab (Enable Home Assistant is diagnostics only).
+# Replace entity ids. Swap the time trigger for a price sensor if you use live tariffs.
+
+- alias: ModuleTwo force-charge before price spike
+  description: Charge ModuleTwo before a known expensive period
+  trigger:
+    - platform: time
+      at: "16:00:00"
+  condition:
+    - condition: numeric_state
+      entity_id: sensor.moduletwo_state_of_charge
+      below: 90
+  action:
+    - service: number.set_value
+      target:
+        entity_id: number.moduletwo_power_setpoint
+      data:
+        value: 1200
+  mode: single
+
+- alias: ModuleTwo stop force-charge at peak
+  trigger:
+    - platform: time
+      at: "17:00:00"
+    - platform: numeric_state
+      entity_id: sensor.moduletwo_state_of_charge
+      above: 95
+  action:
+    - service: number.set_value
+      target:
+        entity_id: number.moduletwo_power_setpoint
+      data:
+        value: 0
+  mode: single

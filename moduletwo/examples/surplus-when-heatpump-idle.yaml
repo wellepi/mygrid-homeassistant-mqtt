@@ -1,0 +1,43 @@
+# Charge from surplus when the heat pump is idle.
+# Requires Home Assistant control on the Control tab (Enable Home Assistant is diagnostics only).
+# Replace entity ids: Power Setpoint, heat pump, grid power, SoC.
+# Grid power: use VoltBridge Actual power (kW, negative = export) or another meter.
+# If you use VoltBridge, convert kW→W in the automation or change the thresholds (e.g. below: -0.2).
+
+- alias: ModuleTwo charge from surplus when heat pump idle
+  description: Charge ModuleTwo from export when the heat pump is not running
+  trigger:
+    - platform: numeric_state
+      entity_id: sensor.grid_power
+      below: -200
+      for:
+        minutes: 2
+  condition:
+    - condition: state
+      entity_id: binary_sensor.heat_pump
+      state: "off"
+    - condition: numeric_state
+      entity_id: sensor.moduletwo_state_of_charge
+      below: 95
+  action:
+    - service: number.set_value
+      target:
+        entity_id: number.moduletwo_power_setpoint
+      data:
+        value: 800
+  mode: single
+
+- alias: ModuleTwo idle when surplus gone
+  trigger:
+    - platform: numeric_state
+      entity_id: sensor.grid_power
+      above: -50
+      for:
+        minutes: 2
+  action:
+    - service: number.set_value
+      target:
+        entity_id: number.moduletwo_power_setpoint
+      data:
+        value: 0
+  mode: single
